@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Reply Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #fdfaff;
+      --card: #ffffff;
+      --primary: #6c5ce7;
+      --text: #333;
+      --border: #eee;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      color: var(--text);
+    }
+    .header {
+      padding: 16px 24px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .menu-btn {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--primary);
+    }
+    .menu-popup {
+      position: absolute;
+      top: 56px;
+      left: 20px;
+      background: white;
+      border: 1px solid #ddd;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      padding: 12px;
+      border-radius: 8px;
+      width: 260px;
+      z-index: 1000;
+      display: none;
+    }
+    .chat-item {
+      margin-bottom: 6px;
+      padding: 6px 8px;
+      background: #fafafa;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .chat-title {
+      flex: 1;
+      cursor: pointer;
+    }
+    .chat-title input {
+      width: 100%;
+      font-size: 14px;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      padding: 2px 4px;
+    }
+    .main {
+      padding: 24px;
+      max-width: 720px;
+      margin: auto;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: var(--primary);
+      text-align: center;
+    }
+    textarea {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      resize: vertical;
+      min-height: 80px;
+      font-family: 'Poppins', sans-serif;
+    }
+    select, button {
+      padding: 10px 16px;
+      font-size: 15px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-family: 'Poppins', sans-serif;
+      margin-top: 10px;
+    }
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    .response {
+      background: #f8f9ff;
+      border-left: 4px solid var(--primary);
+      padding: 16px;
+      margin-top: 20px;
+      border-radius: 8px;
+      position: relative;
+    }
+    .response pre {
+      white-space: pre-wrap;
+      font-size: 15px;
+      font-family: 'Courier New', monospace;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: transparent;
+      border: none;
+      color: var(--primary);
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .history {
+      margin-top: 30px;
+      font-size: 14px;
+      color: #666;
+    }
+    .mode-label {
+      margin-top: 12px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <button class="menu-btn" onclick="toggleMenu()">☰ Chats</button>
+    <button onclick="createNewChatSession()">➕ New Chat</button>
+  </div>
+
+  <div class="menu-popup" id="chatMenu"></div>
+
+  <div class="main">
+    <h2>Smart Reply Generator</h2>
+
+    <div class="mode-label">Who is the message from?</div>
+    <select id="fromWhom">
+      <option value="he">🧔 He</option>
+      <option value="she">👩 She</option>
+      <option value="random">🔀 Random</option>
+    </select>
+
+    <textarea id="userText" placeholder="Paste the message they sent to you..."></textarea>
+
+    <div class="mode-label">Choose Reply Style:</div>
+<select id="mode">
+  <option value="uplifting">💡 Uplifting & Positive</option>
+  <option value="expert">🧠 Expert & Bilingual</option>
+  <option value="sweet">✨ Sweet & Motivational</option>
+  <option value="cute">💬 Ultra Cute Variations</option>
+  <option value="atharv1">🌟 Intelligent + Charming</option>
+  <option value="atharv2">📘 Supportive & Deep</option>
+  <option value="modernGenZ">📱 Gen Z Expressive Styles</option>
+  <option value="expertBengEng">🔤 Expert Bengali+English</option>
+  <option value="emotionalWarm">❤️ Soft, Caring & Warm</option>
+</select>
+
+    <div class="mode-label">Who is replying?</div>
+    <select id="toWhom">
+      <option value="me">🧑 Me</option>
+      <option value="he">🧔 He</option>
+      <option value="she">👩 She</option>
+      <option value="random">🔀 Random</option>
+    </select>
+
+    <div class="mode-label">🧠 Anything you'd like the reply to include?</div>
+    <textarea id="userNote" placeholder="(Optional) Write your ideas, tone preferences, or comment..."></textarea>
+
+    <button onclick="generateReply()">Generate</button>
+
+    <div class="response" id="responseBox" style="display:none;">
+      <button class="copy-btn" onclick="copyResponse()">📋 Copy</button>
+      <pre id="replyOutput">Your response will appear here.</pre>
+    </div>
+
+    <div class="history" id="historyLog"></div>
+  </div>
+
+  <script>
+const prompts = {
+  uplifting: "Craft a brief, uplifting response that is positive and motivational.",
+  expert: "Craft a highly competent, expert-level response in both Bengali and English.",
+  sweet: "Craft a concise, emotionally uplifting, professionally polished reply.",
+  cute: "Transform a given text into fun, adorable, and stylish variations.",
+  atharv1: "Craft a concise, emotionally uplifting, and professionally polished reply that radiates warmth, positivity, and motivation. The tone should be intelligent yet approachable, with a soft, sweet touch that feels genuine and empowering. Blend charm, authenticity, and a hint of playful language to make it relatable and memorable. Ensure the message inspires confidence and encouragement while leaving a lasting impression of thoughtful support.",
+  atharv2: "Craft a brief, uplifting response that is positive and motivational. It should be clear, supportive, and concise while demonstrating professionalism and deep understanding. Ensure the tone is engaging and leaves a lasting, encouraging impression.",
+  modernGenZ: "You are an expert in crafting modern, expressive, and highly engaging text messages. Transform a given text into multiple fun, adorable, and stylish variations while maintaining its core meaning. Each version should reflect different tones and emotions (e.g., Soft & Cozy, Hyped & Playful, Dreamy & Romantic, etc.), using Gen Z and aesthetic phrasing. Make the responses trendy, charming, and full of personality.",
+  expertBengEng: "Reply in a competent, expert manner in Bengali & English. Keep it peaceful, well-structured, and natural.",
+  emotionalWarm: "You are an expert in crafting warm, friendly, and emotionally thoughtful responses. Rewrite a given message in multiple ways while keeping it soft-hearted, caring, and naturally engaging. Ensure the tone is comforting, expressive, and pleasant to read—like heartfelt messages from a caring friend."
+};
+
+      const apiKey = "AIzaSyAOHTr2dQYANMTjvKupL_olBJmG-yhY1OQ"; // ⚠️ Don't share this publicly
+
+    async function generateReply() {
+      const text = document.getElementById("userText").value.trim();
+      const mode = document.getElementById("mode").value;
+      const sender = document.getElementById("fromWhom").value;
+      const responder = document.getElementById("toWhom").value;
+      const note = document.getElementById("userNote").value.trim();
+
+      if (!text) return alert("Please paste the original message first!");
+
+      const prompt = `${prompts[mode]}
+
+This is a message written by ${sender.toUpperCase()}.
+Please generate a reply from the perspective of ${responder.toUpperCase()}.
+
+${note ? "Additional context from user: " + note : ""}
+
+Text: ${text}`;
+
+      const replyBox = document.getElementById("responseBox");
+      const replyOutput = document.getElementById("replyOutput");
+      replyBox.style.display = "block";
+      replyOutput.textContent = "⏳ Generating reply...";
+
+      const response = await callGemini(prompt);
+      replyOutput.textContent = response;
+      saveMessage(text, response);
+      loadCurrentChat();
+    }
+
+    async function callGemini(prompt) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const data = await res.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || "⚠️ No reply.";
+      } catch (err) {
+        return "❌ Error: " + err.message;
+      }
+    }
+
+    function copyResponse() {
+      const text = document.getElementById("replyOutput").innerText;
+      navigator.clipboard.writeText(text)
+        .then(() => alert("Copied to clipboard!"))
+        .catch(() => alert("Failed to copy."));
+    }
+
+    function toggleMenu() {
+      const menu = document.getElementById("chatMenu");
+      menu.style.display = menu.style.display === "block" ? "none" : "block";
+    }
+
+    function createNewChatSession() {
+      const sessions = JSON.parse(localStorage.getItem("chatSessions")) || [];
+      const newId = Date.now().toString();
+      const formattedTime = new Date().toLocaleString();
+      const newSession = {
+        id: newId,
+        title: `Chat on ${formattedTime}`,
+        messages: []
+      };
+      sessions.unshift(newSession);
+      localStorage.setItem("chatSessions", JSON.stringify(sessions));
+      localStorage.setItem("activeChatId", newId);
+      showChatList();
+      loadCurrentChat();
+    }
+
+    function saveMessage(original, reply) {
+      const sessions = JSON.parse(localStorage.getItem("chatSessions")) || [];
+      const activeId = localStorage.getItem("activeChatId");
+      const session = sessions.find(s => s.id === activeId);
+      if (session) {
+        session.messages.push({ original, reply, timestamp: new Date().toISOString() });
+        localStorage.setItem("chatSessions", JSON.stringify(sessions));
+      }
+    }
+
+    function showChatList() {
+      const sessions = JSON.parse(localStorage.getItem("chatSessions")) || [];
+      const container = document.getElementById("chatMenu");
+      container.innerHTML = "";
+
+      sessions.forEach(session => {
+        const chatDiv = document.createElement("div");
+        chatDiv.className = "chat-item";
+
+        const titleSpan = document.createElement("span");
+        titleSpan.className = "chat-title";
+        titleSpan.textContent = session.title;
+        titleSpan.onclick = () => {
+          loadChat(session.id);
+          toggleMenu();
+        };
+
+        // ✅ Enable rename (desktop + mobile)
+        function enableRename(titleSpan, chatDiv, session) {
+          const input = document.createElement("input");
+          input.value = session.title;
+          input.onblur = () => renameSession(session.id, input.value);
+          input.onkeydown = (e) => {
+            if (e.key === "Enter") renameSession(session.id, input.value);
+          };
+          chatDiv.replaceChild(input, titleSpan);
+          input.focus();
+        }
+
+        titleSpan.ondblclick = () => enableRename(titleSpan, chatDiv, session);
+
+        let pressTimer;
+        titleSpan.ontouchstart = () => {
+          pressTimer = setTimeout(() => enableRename(titleSpan, chatDiv, session), 600);
+        };
+        titleSpan.ontouchend = () => clearTimeout(pressTimer);
+        titleSpan.ontouchmove = () => clearTimeout(pressTimer);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "❌";
+        deleteBtn.style.marginLeft = "8px";
+        deleteBtn.style.border = "none";
+        deleteBtn.style.background = "transparent";
+        deleteBtn.style.cursor = "pointer";
+        deleteBtn.style.color = "red";
+        deleteBtn.onclick = () => deleteSession(session.id);
+
+        chatDiv.appendChild(titleSpan);
+        chatDiv.appendChild(deleteBtn);
+        container.appendChild(chatDiv);
+      });
+    }
+
+    function renameSession(sessionId, newTitle) {
+      const sessions = JSON.parse(localStorage.getItem("chatSessions")) || [];
+      const session = sessions.find(s => s.id === sessionId);
+      if (session) {
+        session.title = newTitle || session.title;
+        localStorage.setItem("chatSessions", JSON.stringify(sessions));
+        showChatList();
+      }
+    }
+
+    function deleteSession(sessionId) {
+      let sessions = JSON.parse(localStorage.getItem("chatSessions")) || [];
+      sessions = sessions.filter(s => s.id !== sessionId);
+      localStorage.setItem("chatSessions", JSON.stringify(sessions));
+
+      const activeId = localStorage.getItem("activeChatId");
+      if (activeId === sessionId) {
+        const newActive = sessions[0]?.id || null;
+        localStorage.setItem("activeChatId", newActive);
+      }
+
+      showChatList();
+      loadCurrentChat();
+    }
+
+    function loadChat(chatId) {
+      localStorage.setItem("activeChatId", chatId);
+      loadCurrentChat();
+    }
+
+    function loadCurrentChat() {
+      const sessions = JSON.parse(localStorage.getItem("chatSessions")) || [];
+      const activeId = localStorage.getItem("activeChatId");
+      const session = sessions.find(s => s.id === activeId);
+      const container = document.getElementById("historyLog");
+      if (!session) {
+        container.innerHTML = "<i>No chat selected.</i>";
+        return;
+      }
+      container.innerHTML = "<b>Chat History:</b><br><br>" + session.messages.map(m => `
+        <div style="margin-bottom:16px;">
+          <div><strong>🧑 You:</strong> ${m.original}</div>
+          <div><strong>🤖 AI:</strong> ${m.reply}</div>
+        </div>
+      `).join("");
+    }
+
+    window.onload = () => {
+      const sessions = JSON.parse(localStorage.getItem("chatSessions")) || [];
+      if (sessions.length === 0) {
+        createNewChatSession();
+      } else {
+        showChatList();
+        const activeId = localStorage.getItem("activeChatId") || sessions[0].id;
+        localStorage.setItem("activeChatId", activeId);
+        loadCurrentChat();
+      }
+    };
+  </script>
+</body>
+</html>
