@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat with Harv</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    color: #333;
+  }
+  .top-bar {
+    padding: 12px 20px;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .top-bar h3 {
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .top-bar h3 span:first-child {
+    color: #6c5ce7;
+  }
+  .top-bar h3 span:last-child {
+    color: #222;
+    font-weight: 700;
+  }
+  .top-bar button {
+    background: #4b7bec;
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .chat-box {
+    flex: 1;
+    padding: 16px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .message {
+    max-width: 90%;
+    padding: 14px 18px;
+    margin: 10px 0;
+    border-radius: 12px;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    position: relative;
+  }
+  .user {
+    align-self: flex-end;
+    background: #eaeef2;
+    border-bottom-right-radius: 0;
+  }
+  .bot {
+    align-self: flex-start;
+    background: #f7f8fa;
+    border-bottom-left-radius: 0;
+  }
+
+  .actions {
+    display: none;
+    font-size: 13px;
+    margin-top: 6px;
+    gap: 10px;
+  }
+  .message:hover .actions {
+    display: flex;
+  }
+  .actions button {
+    background: none;
+    border: none;
+    color: #4b7bec;
+    cursor: pointer;
+  }
+
+  .regen-icon {
+    position: absolute;
+    bottom: 8px;
+    right: 10px;
+    font-size: 14px;
+    color: #4b7bec;
+    cursor: pointer;
+    display: none;
+  }
+  .bot:hover .regen-icon {
+    display: inline;
+  }
+
+  .input-area {
+    display: flex;
+    padding: 14px 20px;
+    border-top: 1px solid #eee;
+    background: #fff;
+  }
+  textarea {
+    flex: 1;
+    padding: 10px;
+    font-size: 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    resize: none;
+  }
+  button.send {
+    margin-left: 10px;
+    background: #4b7bec;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  @media (max-width: 768px) {
+    .top-bar h3 { font-size: 16px; }
+    .chat-box { padding: 12px; }
+    .input-area { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+  <div class="top-bar">
+    <h3><span>✨ Chat with</span> <span>Harv</span></h3>
+    <button onclick="newChat()">➕ New Chat</button>
+  </div>
+  <div class="chat-box" id="chatBox"></div>
+  <div class="input-area">
+    <textarea id="userInput" rows="2" placeholder="Ask something..."></textarea>
+    <button class="send" onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    const chatBox = document.getElementById("chatBox");
+      const apiKey = "AIzaSyAOHTr2dQYANMTjvKupL_olBJmG-yhY1OQ"; // ⚠️ Your Gemini API Key
+
+    window.onload = () => {
+      const saved = JSON.parse(localStorage.getItem("chatHistory")) || [];
+      saved.forEach(msg => appendMessage(msg.text, msg.type, false));
+      if (saved.length === 0) {
+        appendMessage("👋 Hello! Let’s start fresh, ask me anything.", "bot", true);
+      }
+    };
+
+    function appendMessage(text, type, save = true, originalText = "") {
+      const msg = document.createElement("div");
+      msg.className = `message ${type}`;
+
+      const content = document.createElement("div");
+      content.className = "text";
+      content.textContent = text;
+      msg.appendChild(content);
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const btnCopy = document.createElement("button");
+      btnCopy.textContent = "📋 Copy";
+      btnCopy.onclick = () => {
+        navigator.clipboard.writeText(content.innerText)
+          .then(() => btnCopy.textContent = "✅ Copied")
+          .catch(() => btnCopy.textContent = "❌ Failed");
+      };
+      actions.appendChild(btnCopy);
+
+      const btnEdit = document.createElement("button");
+      btnEdit.textContent = "✏️ Edit";
+      btnEdit.onclick = () => editMessage(msg, content.innerText, type);
+      actions.appendChild(btnEdit);
+
+      msg.appendChild(actions);
+
+      if (type === "bot") {
+        const regenIcon = document.createElement("div");
+        regenIcon.className = "regen-icon";
+        regenIcon.textContent = "♻️";
+        regenIcon.title = "Regenerate";
+        regenIcon.onclick = () => regenerateMessage(msg, originalText || content.innerText);
+        msg.appendChild(regenIcon);
+      }
+
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      if (save) {
+        const history = JSON.parse(localStorage.getItem("chatHistory")) || [];
+        history.push({ text, type });
+        localStorage.setItem("chatHistory", JSON.stringify(history));
+      }
+    }
+
+    function editMessage(msgDiv, oldText, type) {
+      const textDiv = msgDiv.querySelector(".text");
+      const textarea = document.createElement("textarea");
+      textarea.value = oldText;
+      textarea.rows = 3;
+      textarea.style.width = "100%";
+      textarea.style.marginTop = "8px";
+
+      const saveBtn = document.createElement("button");
+      saveBtn.textContent = "💾 Save";
+      saveBtn.style.marginTop = "6px";
+
+      saveBtn.onclick = async () => {
+        const newText = textarea.value.trim();
+        textDiv.textContent = newText;
+        msgDiv.removeChild(textarea);
+        msgDiv.removeChild(saveBtn);
+
+        if (type === "user") {
+          const allMessages = [...chatBox.children];
+          const userIndex = allMessages.indexOf(msgDiv);
+          const nextMsg = allMessages[userIndex + 1];
+          if (nextMsg && nextMsg.classList.contains("bot")) {
+            chatBox.removeChild(nextMsg);
+          }
+          appendMessage("⏳ Thinking...", "bot", false);
+          const reply = await callBotAPI(newText);
+          chatBox.removeChild(chatBox.lastChild);
+          appendMessage(reply, "bot", true, newText);
+        }
+      };
+
+      msgDiv.appendChild(textarea);
+      msgDiv.appendChild(saveBtn);
+    }
+
+    function regenerateMessage(msgDiv, inputText) {
+      const thinking = document.createElement("div");
+      thinking.className = "message bot";
+      thinking.textContent = "⏳ Thinking...";
+      chatBox.appendChild(thinking);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      callBotAPI(inputText).then(reply => {
+        chatBox.removeChild(thinking);
+        chatBox.removeChild(msgDiv);
+        appendMessage(reply, "bot", true, inputText);
+      });
+    }
+
+    async function callBotAPI(text) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text }] }] })
+        });
+        const data = await res.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || "⚠️ No reply.";
+      } catch (err) {
+        return "❌ Error: " + err.message;
+      }
+    }
+
+    function newChat() {
+      localStorage.removeItem("chatHistory");
+      chatBox.innerHTML = "";
+      appendMessage("👋 Hello! Let’s start fresh, ask me anything.", "bot", true);
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("userInput");
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendMessage(text, "user");
+      input.value = "";
+      appendMessage("⏳ Thinking...", "bot", false);
+
+      const reply = await callBotAPI(text);
+      chatBox.removeChild(chatBox.lastChild);
+      appendMessage(reply, "bot", true, text);
+    }
+  </script>
+</body>
+</html>
